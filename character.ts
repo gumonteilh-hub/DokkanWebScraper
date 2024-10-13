@@ -8,7 +8,7 @@ export interface Character {
     type: Types,
     cost: number,
     id: string,
-    imageURL: string,
+    imageURL: ImageLink,
     leaderSkill: string,
     ezaLeaderSkill?: string,
     superAttack: string,
@@ -39,6 +39,11 @@ export interface Character {
     rainbowDefence: number,
     kiMultiplier: string,
     transformations?: Transformation[]
+}
+
+export interface ImageLink {
+    simpleUrl?: string
+    complexeUrl?: string
 }
 
 export enum Classes {
@@ -72,6 +77,6 @@ export interface Transformation {
     transformedEZAPassive?: string,
     transformedActiveSkill?: string,
     transformedActiveSkillCondition?: string,
-    transformedLinks:string[],
+    transformedLinks: string[],
     transformedImageURL: string,
 }

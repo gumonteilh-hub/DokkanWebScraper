@@ -1,13 +1,34 @@
 import axios, { AxiosError } from 'axios';
 
 import { JSDOM } from 'jsdom';
-import { Character, Rarities, Classes, Types, Transformation } from "./character";
+import { Character, Rarities, Classes, Types, Transformation, ImageLink } from "./character";
+import { cp } from 'fs';
 
 export async function getDokkanData(rarity: string) {
-    const document: Document = await fetchFromWeb('https://dbz-dokkanbattle.fandom.com/wiki/Category:' + rarity);
-    const links: string[] = extractLinks(document);
+
+    let url = 'https://dbz-dokkanbattle.fandom.com/wiki/Category:' + rarity;
+    let links: string[] = [];
+
+    console.log("indexing pages");
+
+    while (true) {
+        const document: Document = await fetchFromWeb(url);
+        links = [...links, ...extractLinks(document)];
+        const nextButtons = document.getElementsByClassName("category-page__pagination-next");
+        if (nextButtons.length > 0) {
+            url = (nextButtons[0] as HTMLAnchorElement).href;
+            console.log("page done")
+        } else {
+            break;
+        }
+    }
+
+    console.log("indexing pages is over");
+
 
     const charactersData = await Promise.all(links.map(async link => {
+        const ezaLink = link + "#Extreme_Z-Awakened"
+        console.log(ezaLink)
         const characterDocument: Document = await fetchFromWeb(link)
         return extractCharacterData(characterDocument)
     }))
@@ -32,7 +53,7 @@ export async function fetchFromWeb(url: string) {
 
 }
 
-function extractLinks(document: Document) {
+function extractLinks(document: Document): string[] {
     const URIs: HTMLAnchorElement[] = Array.from(
         document.querySelectorAll('.category-page__member-link'),
     );
@@ -52,7 +73,7 @@ export function extractCharacterData(characterDocument: Document) {
         type: Types[characterDocument.querySelector('.mw-parser-output')?.querySelector('table > tbody > tr:nth-child(3) > td:nth-child(4) > center:nth-child(1) > a:nth-child(1)')?.getAttribute('title')?.split(' ')[1] ?? 'Error'],
         cost: parseInt((characterDocument.querySelector('.mw-parser-output')?.querySelector('table > tbody > tr:nth-child(3) > td:nth-child(5) > center:nth-child(1)')?.textContent) ?? 'Error'),
         id: characterDocument.querySelector('.mw-parser-output')?.querySelector('table > tbody > tr:nth-child(3) > td:nth-child(6) > center:nth-child(1)')?.textContent ?? 'Error',
-        imageURL: (characterDocument.querySelector('.mw-parser-output')?.querySelector('table > tbody > tr > td > div > img')?.getAttribute('src') || characterDocument.querySelector('.mw-parser-output')?.querySelector('table > tbody > tr > td > a')?.getAttribute('href')) ?? 'Error',
+        imageURL: getImageUrl(characterDocument),
         leaderSkill: characterDocument.querySelector('[data-image-name="Leader Skill.png"]')?.closest('tr')?.nextElementSibling?.textContent ?? 'Error',
         ezaLeaderSkill: characterDocument.querySelector('.ezatabber > div > div:nth-child(3) > table > tbody > tr:nth-child(2) > td')?.textContent ?? undefined,
         superAttack: characterDocument.querySelector('[data-image-name="Super atk.png"]')?.closest('tr')?.nextElementSibling?.textContent ?? 'Error',
@@ -114,3 +135,23 @@ function extractTransformedCharacterData(characterDocument: Document): Transform
     return transformedArray
 }
 
+function getImageUrl(characterDocument: Document): ImageLink {
+    const baseDocument = characterDocument.querySelector('.mw-parser-output')?.getElementsByTagName('table')[0];
+    const simpleUrl = (baseDocument?.querySelector('tbody > tr > td > div > img')?.getAttribute('src') || baseDocument?.querySelector('tbody > tr > td > a')?.getAttribute('href'));
+
+    if (simpleUrl) return { simpleUrl : sanitizeImgUrl(simpleUrl) }
+
+    const imageContainer = baseDocument.querySelector('tbody > tr > td > div').children;
+
+    const complexeUrl = (imageContainer[3].firstChild as HTMLAnchorElement).href;
+
+    return { complexeUrl : sanitizeImgUrl(complexeUrl) }
+}
+
+const sanitizeImgUrl = (url?: string): string => {
+    if (url) {
+        return url.split(".png")[0] + ".png"
+    } else {
+        return "error"
+    }
+}

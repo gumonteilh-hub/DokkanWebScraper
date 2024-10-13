@@ -4,18 +4,12 @@ import { resolve } from "path";
 import { getDokkanData } from "./scraper";
 
 export async function saveDokkanResults() {
-    console.log('Starting scrape');
+    console.log('Starting UR');
     const URData = await getDokkanData('UR');
-    console.log('First set done');
-    const URData2 = await getDokkanData('UR?from=Evil+Pride+Frieza+(Final+Form)+(Angel)');
-    console.log('Second set done');
-    const URData3 = await getDokkanData('UR?from=Next-Level+Strike+Super+Saiyan+God+SS+Goku');
-    console.log('Third set done');
-    const URData4 = await getDokkanData('UR?from=Training+and+Refreshment+Goku');
-    console.log('Forth set done');
+    console.log('Starting LR');
     const LRData = await getDokkanData('LR');
     console.log('Finished scrape, saving data');
-    let data = LRData.concat(URData, URData2, URData3, URData4);
+    let data = LRData.concat(URData);
     let currentDate = new Date();
     let day = ("0" + currentDate.getUTCDate()).slice(-2);
     let month = ("0" + currentDate.getUTCMonth() + 1).slice(-2);
