@@ -136,16 +136,21 @@ function extractTransformedCharacterData(characterDocument: Document): Transform
 }
 
 function getImageUrl(characterDocument: Document): ImageLink {
-    const baseDocument = characterDocument.querySelector('.mw-parser-output')?.getElementsByTagName('table')[0];
-    const simpleUrl = (baseDocument?.querySelector('tbody > tr > td > div > img')?.getAttribute('src') || baseDocument?.querySelector('tbody > tr > td > a')?.getAttribute('href'));
+        const baseDocument = characterDocument.querySelector('.mw-parser-output')?.getElementsByTagName('table')[0];
+        const simpleUrl = (baseDocument?.querySelector('tbody > tr > td > div > img')?.getAttribute('src') || 
+            baseDocument?.querySelector('tbody > tr > td > a')?.getAttribute('href') || baseDocument?.querySelector('tbody > tr > td > img')?.getAttribute('src') ) ;
 
-    if (simpleUrl) return { simpleUrl : sanitizeImgUrl(simpleUrl) }
+        if (simpleUrl) {
+            return { simpleUrl : sanitizeImgUrl(simpleUrl) }
+        }
 
-    const imageContainer = baseDocument.querySelector('tbody > tr > td > div').children;
-
-    const complexeUrl = (imageContainer[3].firstChild as HTMLAnchorElement).href;
-
-    return { complexeUrl : sanitizeImgUrl(complexeUrl) }
+    try {
+        const imageContainer = baseDocument.querySelector('tbody > tr > td > div')?.children;
+        const complexeUrl = (imageContainer[3].firstChild as HTMLAnchorElement).href;
+        return { complexeUrl : sanitizeImgUrl(complexeUrl) }
+    } catch {
+        return { complexeUrl : "error" }
+    }
 }
 
 const sanitizeImgUrl = (url?: string): string => {
